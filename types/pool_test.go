@@ -208,3 +208,57 @@ func TestPool_Contains(t *testing.T) {
 		}
 	}
 }
+
+func TestPool_Overlaps(t *testing.T) {
+	_, subnet, _ := net.ParseCIDR("192.168.0.0/24")
+	tests := []struct {
+		pool1   *Pool
+		pool2   *Pool
+		overlap bool
+	}{
+		{
+			pool1: &Pool{
+				PoolStart: net.ParseIP("192.168.0.100"),
+				Subnet:    subnet,
+			},
+			pool2: &Pool{
+				PoolStart: net.ParseIP("1030::C9B4:FF12:48AA:1A2B"),
+				Subnet:    subnet,
+			},
+			overlap: false,
+		},
+		{
+			pool1: &Pool{
+				PoolStart: net.ParseIP("192.168.0.100"),
+				PoolEnd:   net.ParseIP("192.168.0.200"),
+				Subnet:    subnet,
+			},
+			pool2: &Pool{
+				PoolStart: net.ParseIP("192.168.0.180"),
+				PoolEnd:   net.ParseIP("192.168.0.220"),
+				Subnet:    subnet,
+			},
+			overlap: true,
+		},
+		{
+			pool1: &Pool{
+				PoolStart: net.ParseIP("192.168.0.10"),
+				PoolEnd:   net.ParseIP("192.168.0.20"),
+				Subnet:    subnet,
+			},
+			pool2: &Pool{
+				PoolStart: net.ParseIP("192.168.0.180"),
+				PoolEnd:   net.ParseIP("192.168.0.220"),
+				Subnet:    subnet,
+			},
+			overlap: false,
+		},
+	}
+
+	for _, test := range tests {
+		if test.pool1.Overlaps(test.pool2) != test.overlap {
+			t.Errorf("fails")
+			return
+		}
+	}
+}

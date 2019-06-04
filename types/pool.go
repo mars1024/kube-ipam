@@ -141,6 +141,14 @@ func (p *Pool) Contains(addr net.IP) bool {
 	return true
 }
 
+// Overlaps returns true if there is any overlap between ranges
+func (p *Pool) Overlaps(p1 *Pool) bool {
+	return p.Contains(p1.PoolStart) ||
+		p.Contains(p1.PoolEnd) ||
+		p1.Contains(p.PoolStart) ||
+		p1.Contains(p.PoolEnd)
+}
+
 // canonicalizeIP makes sure a provided ip is in ipv4 standard form
 func canonicalizeIP(ip *net.IP) error {
 	if ip.To4() == nil {
