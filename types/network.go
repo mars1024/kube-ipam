@@ -16,7 +16,10 @@
 
 package types
 
-import "net"
+import (
+	"fmt"
+	"net"
+)
 
 type Network struct {
 	Name  string  `json:"name"`
@@ -26,4 +29,22 @@ type Network struct {
 type LastReservedIP struct {
 	IP   net.IP `json:"ip"`
 	Pool string `json:"pool"`
+}
+
+func (l *LastReservedIP) Index(n *Network) (int, error) {
+	poolIndex := -1
+	for idx, pool := range n.Pools {
+		if pool.Name == l.Pool {
+			poolIndex = idx
+			break
+		}
+	}
+
+	switch {
+	case poolIndex < 0:
+		return -1, fmt.Errorf("last reserved ip's pool is not in network")
+	case !n.Pools[poolIndex].Contains(l.IP):
+		return -1, fmt.Errorf("last reserved ip is not in pool %s", l.Pool)
+	}
+	return poolIndex, nil
 }
