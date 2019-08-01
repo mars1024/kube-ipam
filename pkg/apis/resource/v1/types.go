@@ -45,7 +45,7 @@ type Pool struct {
 	PoolEnd   string `json:"poolEnd,omitempty"`
 	Gateway   string `json:"gateway,omitempty"`
 	Subnet    string `json:"subnet,omitempty"`
-	VlanId    int    `json:"vlanId,omitempty"`
+	VlanId    *int32 `json:"vlanId,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
