@@ -18,6 +18,7 @@ package types
 
 import (
 	"fmt"
+	v1 "github.com/mars1024/kube-ipam/pkg/apis/resource/v1"
 	"net"
 
 	"github.com/containernetworking/plugins/pkg/ip"
@@ -169,4 +170,36 @@ func lastIP(subnet *net.IPNet) net.IP {
 	}
 
 	return end
+}
+
+// GetPoolFromCRD can help get typed pool from pool CRD
+func GetPoolFromCRD(p *v1.Pool) (*Pool, error) {
+	pool := &Pool{
+		Name:   p.Name,
+		VlanID: p.VlanId,
+	}
+
+	if len(p.PoolStart) > 0 {
+		pool.PoolStart = net.ParseIP(p.PoolStart)
+	}
+
+	if len(p.PoolEnd) > 0 {
+		pool.PoolEnd = net.ParseIP(p.PoolEnd)
+	}
+
+	if len(p.Gateway) > 0 {
+		pool.Gateway = net.ParseIP(p.Gateway)
+	}
+
+	_, subnet, err := net.ParseCIDR(p.Subnet)
+	if err != nil {
+		return nil, err
+	}
+	pool.Subnet = subnet
+
+	if err = pool.Canonicalize(); err != nil {
+		return nil, err
+	}
+
+	return pool, nil
 }

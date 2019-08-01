@@ -41,8 +41,8 @@ func TestLastReservedIP_Index(t *testing.T) {
 				},
 			},
 			lrip: &LastReservedIP{
-				IP:   nil,
-				Pool: "test1",
+				IP:       nil,
+				PoolName: "test1",
 			},
 			idx: -1,
 		},
@@ -56,8 +56,8 @@ func TestLastReservedIP_Index(t *testing.T) {
 				},
 			},
 			lrip: &LastReservedIP{
-				IP:   net.IP([]byte{192, 168, 0, 100}),
-				Pool: "test1",
+				IP:       net.IP([]byte{192, 168, 0, 100}),
+				PoolName: "test1",
 			},
 			idx: 0,
 		},
@@ -71,8 +71,8 @@ func TestLastReservedIP_Index(t *testing.T) {
 				},
 			},
 			lrip: &LastReservedIP{
-				IP:   net.IP([]byte{192, 168, 1, 100}),
-				Pool: "test1",
+				IP:       net.IP([]byte{192, 168, 1, 100}),
+				PoolName: "test1",
 			},
 			idx: -1,
 		},
