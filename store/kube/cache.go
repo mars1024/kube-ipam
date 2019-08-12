@@ -23,7 +23,7 @@ import (
 	"sync"
 )
 
-var LOGGER = logrus.WithFields(logrus.Fields{"component": "cache"})
+var LoggerCache = logrus.WithFields(logrus.Fields{"component": "cache"})
 
 type Cache struct {
 	*sync.RWMutex
@@ -48,11 +48,11 @@ func (c *Cache) addNetwork(network *v1.Network) {
 
 	net, err := types.GetNetworkFromCRD(network)
 	if err != nil {
-		LOGGER.Errorf("fail to add network %+v to cache : %s", network, err)
+		LoggerCache.Errorf("fail to add network %+v to cache : %s", network, err)
 	}
 
 	c.networks[network.Name] = net
-	LOGGER.Debugf("add network %s %+v to cache", network.Name, network.Spec)
+	LoggerCache.Debugf("add network %s %+v to cache", network.Name, network.Spec)
 }
 
 func (c *Cache) updateNetwork(network *v1.Network) {
@@ -66,11 +66,11 @@ func (c *Cache) updateNetwork(network *v1.Network) {
 
 	net, err := types.GetNetworkFromCRD(network)
 	if err != nil {
-		LOGGER.Errorf("fail to update network %+v to cache : %s", network, err)
+		LoggerCache.Errorf("fail to update network %+v to cache : %s", network, err)
 	}
 
 	c.networks[network.Name] = net
-	LOGGER.Debugf("update network %s %+v to cache", network.Name, network.Spec)
+	LoggerCache.Debugf("update network %s %+v to cache", network.Name, network.Spec)
 }
 
 func (c *Cache) deleteNetwork(network *v1.Network) {
@@ -78,7 +78,7 @@ func (c *Cache) deleteNetwork(network *v1.Network) {
 	defer c.Unlock()
 
 	delete(c.networks, network.Name)
-	LOGGER.Debugf("delete network %s %+v from cache", network.Name, network.Spec)
+	LoggerCache.Debugf("delete network %s %+v from cache", network.Name, network.Spec)
 }
 
 func (c *Cache) addUsingIP(usingIP *v1.UsingIP) {
@@ -86,7 +86,7 @@ func (c *Cache) addUsingIP(usingIP *v1.UsingIP) {
 	defer c.Unlock()
 
 	c.usingIPs[usingIP.Name] = usingIP.Spec.PodName
-	LOGGER.Debugf("add using ip %s %+v to cache", usingIP.Name, usingIP.Spec)
+	LoggerCache.Debugf("add using ip %s %+v to cache", usingIP.Name, usingIP.Spec)
 }
 
 func (c *Cache) updateUsingIP(usingIP *v1.UsingIP) {
@@ -98,7 +98,7 @@ func (c *Cache) updateUsingIP(usingIP *v1.UsingIP) {
 	}
 
 	c.usingIPs[usingIP.Name] = usingIP.Spec.PodName
-	LOGGER.Debugf("update using ip %s %+v to cache", usingIP.Name, usingIP.Spec)
+	LoggerCache.Debugf("update using ip %s %+v to cache", usingIP.Name, usingIP.Spec)
 }
 
 func (c *Cache) deleteUsingIP(usingIP *v1.UsingIP) {
@@ -106,7 +106,7 @@ func (c *Cache) deleteUsingIP(usingIP *v1.UsingIP) {
 	defer c.Unlock()
 
 	delete(c.usingIPs, usingIP.Name)
-	LOGGER.Debugf("delete using ip %s %+v from cache", usingIP.Name, usingIP.Spec)
+	LoggerCache.Debugf("delete using ip %s %+v from cache", usingIP.Name, usingIP.Spec)
 }
 
 func (c *Cache) addLastReservedIP(lastReservedIP *v1.LastReservedIP) {
@@ -114,7 +114,7 @@ func (c *Cache) addLastReservedIP(lastReservedIP *v1.LastReservedIP) {
 	defer c.Unlock()
 
 	c.lastReservedIPs[lastReservedIP.Name] = types.GetLastReservedIPFromCRD(lastReservedIP)
-	LOGGER.Debugf("add last reserved ip %s %+v to cache", lastReservedIP.Name, lastReservedIP.Spec)
+	LoggerCache.Debugf("add last reserved ip %s %+v to cache", lastReservedIP.Name, lastReservedIP.Spec)
 }
 
 func (c *Cache) updateLastReservedIP(lastReservedIP *v1.LastReservedIP) {
@@ -127,7 +127,7 @@ func (c *Cache) updateLastReservedIP(lastReservedIP *v1.LastReservedIP) {
 	}
 
 	c.lastReservedIPs[lastReservedIP.Name] = types.GetLastReservedIPFromCRD(lastReservedIP)
-	LOGGER.Debugf("update last reserved ip %s %+v to cache", lastReservedIP.Name, lastReservedIP.Spec)
+	LoggerCache.Debugf("update last reserved ip %s %+v to cache", lastReservedIP.Name, lastReservedIP.Spec)
 }
 
 func (c *Cache) deleteLastReservedIP(lastReservedIP *v1.LastReservedIP) {
@@ -135,7 +135,7 @@ func (c *Cache) deleteLastReservedIP(lastReservedIP *v1.LastReservedIP) {
 	defer c.Unlock()
 
 	delete(c.lastReservedIPs, lastReservedIP.Name)
-	LOGGER.Debugf("delete last reserved ip %s %+v from cache", lastReservedIP.Name, lastReservedIP.Spec)
+	LoggerCache.Debugf("delete last reserved ip %s %+v from cache", lastReservedIP.Name, lastReservedIP.Spec)
 }
 
 func (c *Cache) GetNetwork(networkName string) *types.Network {
