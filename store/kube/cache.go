@@ -25,7 +25,7 @@ import (
 
 var LOGGER = logrus.WithFields(logrus.Fields{"component": "cache"})
 
-type cache struct {
+type Cache struct {
 	*sync.RWMutex
 
 	networks        map[string]*types.Network
@@ -33,8 +33,8 @@ type cache struct {
 	lastReservedIPs map[string]*types.LastReservedIP
 }
 
-func NewCache() *cache {
-	return &cache{
+func NewCache() *Cache {
+	return &Cache{
 		RWMutex:         new(sync.RWMutex),
 		networks:        make(map[string]*types.Network),
 		usingIPs:        make(map[string]string),
@@ -42,7 +42,7 @@ func NewCache() *cache {
 	}
 }
 
-func (c *cache) addNetwork(network *v1.Network) {
+func (c *Cache) addNetwork(network *v1.Network) {
 	c.Lock()
 	defer c.Unlock()
 
@@ -55,7 +55,7 @@ func (c *cache) addNetwork(network *v1.Network) {
 	LOGGER.Debugf("add network %s %+v to cache", network.Name, network.Spec)
 }
 
-func (c *cache) updateNetwork(network *v1.Network) {
+func (c *Cache) updateNetwork(network *v1.Network) {
 	c.Lock()
 	defer c.Unlock()
 
@@ -73,7 +73,7 @@ func (c *cache) updateNetwork(network *v1.Network) {
 	LOGGER.Debugf("update network %s %+v to cache", network.Name, network.Spec)
 }
 
-func (c *cache) deleteNetwork(network *v1.Network) {
+func (c *Cache) deleteNetwork(network *v1.Network) {
 	c.Lock()
 	defer c.Unlock()
 
@@ -81,7 +81,7 @@ func (c *cache) deleteNetwork(network *v1.Network) {
 	LOGGER.Debugf("delete network %s %+v from cache", network.Name, network.Spec)
 }
 
-func (c *cache) addUsingIP(usingIP *v1.UsingIP) {
+func (c *Cache) addUsingIP(usingIP *v1.UsingIP) {
 	c.Lock()
 	defer c.Unlock()
 
@@ -89,7 +89,7 @@ func (c *cache) addUsingIP(usingIP *v1.UsingIP) {
 	LOGGER.Debugf("add using ip %s %+v to cache", usingIP.Name, usingIP.Spec)
 }
 
-func (c *cache) updateUsingIP(usingIP *v1.UsingIP) {
+func (c *Cache) updateUsingIP(usingIP *v1.UsingIP) {
 	c.Lock()
 	defer c.Unlock()
 
@@ -101,7 +101,7 @@ func (c *cache) updateUsingIP(usingIP *v1.UsingIP) {
 	LOGGER.Debugf("update using ip %s %+v to cache", usingIP.Name, usingIP.Spec)
 }
 
-func (c *cache) deleteUsingIP(usingIP *v1.UsingIP) {
+func (c *Cache) deleteUsingIP(usingIP *v1.UsingIP) {
 	c.Lock()
 	defer c.Unlock()
 
@@ -109,7 +109,7 @@ func (c *cache) deleteUsingIP(usingIP *v1.UsingIP) {
 	LOGGER.Debugf("delete using ip %s %+v from cache", usingIP.Name, usingIP.Spec)
 }
 
-func (c *cache) addLastReservedIP(lastReservedIP *v1.LastReservedIP) {
+func (c *Cache) addLastReservedIP(lastReservedIP *v1.LastReservedIP) {
 	c.Lock()
 	defer c.Unlock()
 
@@ -117,7 +117,7 @@ func (c *cache) addLastReservedIP(lastReservedIP *v1.LastReservedIP) {
 	LOGGER.Debugf("add last reserved ip %s %+v to cache", lastReservedIP.Name, lastReservedIP.Spec)
 }
 
-func (c *cache) updateLastReservedIP(lastReservedIP *v1.LastReservedIP) {
+func (c *Cache) updateLastReservedIP(lastReservedIP *v1.LastReservedIP) {
 	c.Lock()
 	defer c.Unlock()
 
@@ -130,7 +130,7 @@ func (c *cache) updateLastReservedIP(lastReservedIP *v1.LastReservedIP) {
 	LOGGER.Debugf("update last reserved ip %s %+v to cache", lastReservedIP.Name, lastReservedIP.Spec)
 }
 
-func (c *cache) deleteLastReservedIP(lastReservedIP *v1.LastReservedIP) {
+func (c *Cache) deleteLastReservedIP(lastReservedIP *v1.LastReservedIP) {
 	c.Lock()
 	defer c.Unlock()
 
@@ -138,7 +138,7 @@ func (c *cache) deleteLastReservedIP(lastReservedIP *v1.LastReservedIP) {
 	LOGGER.Debugf("delete last reserved ip %s %+v from cache", lastReservedIP.Name, lastReservedIP.Spec)
 }
 
-func (c *cache) GetNetwork(networkName string) *types.Network {
+func (c *Cache) GetNetwork(networkName string) *types.Network {
 	c.RLock()
 	defer c.RUnlock()
 
@@ -149,7 +149,7 @@ func (c *cache) GetNetwork(networkName string) *types.Network {
 	return nil
 }
 
-func (c *cache) GetLastReservedIP(networkName string) *types.LastReservedIP {
+func (c *Cache) GetLastReservedIP(networkName string) *types.LastReservedIP {
 	c.RLock()
 	defer c.RUnlock()
 
@@ -160,7 +160,7 @@ func (c *cache) GetLastReservedIP(networkName string) *types.LastReservedIP {
 	return nil
 }
 
-func (c *cache) IsIPUsing(ip string) bool {
+func (c *Cache) IsIPUsing(ip string) bool {
 	c.RLock()
 	defer c.RUnlock()
 
