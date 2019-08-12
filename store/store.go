@@ -24,10 +24,6 @@ import (
 
 // IPAMStore is a store interface used by IPAM
 type IPAMStore interface {
-	Lock()
-	Unlock()
-	Close() error
-
 	// Network
 	CreateNetwork(name string) error
 	DeleteNetwork(name string) error

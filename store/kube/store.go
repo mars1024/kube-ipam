@@ -29,18 +29,6 @@ var _ store.IPAMStore = &Store{}
 type Store struct {
 }
 
-func (*Store) Lock() {
-	panic("implement me")
-}
-
-func (*Store) Unlock() {
-	panic("implement me")
-}
-
-func (*Store) Close() error {
-	panic("implement me")
-}
-
 func (*Store) CreateNetwork(name string) error {
 	panic("implement me")
 }
