@@ -18,18 +18,21 @@ package kube
 
 import (
 	"fmt"
-	resourcev1 "github.com/mars1024/kube-ipam/pkg/apis/resource/v1"
-	"github.com/mars1024/kube-ipam/pkg/client/clientset/versioned"
-	"github.com/mars1024/kube-ipam/pkg/client/informers/externalversions"
-	"github.com/sirupsen/logrus"
-	"k8s.io/client-go/tools/cache"
-	"k8s.io/client-go/tools/clientcmd"
 	"net"
 	"sync"
 	"time"
 
+	resourcev1 "github.com/mars1024/kube-ipam/pkg/apis/resource/v1"
+	"github.com/mars1024/kube-ipam/pkg/client/clientset/versioned"
+	"github.com/mars1024/kube-ipam/pkg/client/informers/externalversions"
 	"github.com/mars1024/kube-ipam/store"
 	"github.com/mars1024/kube-ipam/types"
+	"github.com/sirupsen/logrus"
+
+	"k8s.io/apimachinery/pkg/api/errors"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 // check if Store overrides all interfaces of IPAMStore
@@ -105,16 +108,56 @@ func NewStore(masterURL, kubeConfig string, stopCh <-chan struct{}) (*Store, err
 	return store, nil
 }
 
-func (*Store) CreateNetwork(name string) error {
-	panic("implement me")
+func (s *Store) CreateNetwork(name string) error {
+	s.Lock()
+	defer s.Unlock()
+
+	if networkCache := s.cache.GetNetwork(name); networkCache != nil {
+		return fmt.Errorf("network %s already exists", name)
+	}
+
+	// create empty network
+	network := &resourcev1.Network{
+		ObjectMeta: v1.ObjectMeta{
+			Name: name,
+		},
+	}
+	if _, err := s.resourceClient.ResourceV1().Networks().Create(network); err != nil {
+		return err
+	}
+
+	return nil
 }
 
-func (*Store) DeleteNetwork(name string) error {
-	panic("implement me")
+func (s *Store) DeleteNetwork(name string) error {
+	s.Lock()
+	defer s.Unlock()
+
+	networkCache := s.cache.GetNetwork(name)
+	if networkCache == nil {
+		return fmt.Errorf("network %s is not in cache", name)
+	}
+	if len(networkCache.Pools) > 0 {
+		return fmt.Errorf("network with %s pools is not allowed to be deleted", len(networkCache.Pools))
+	}
+
+	if err := s.resourceClient.ResourceV1().Networks().Delete(name, nil); err != nil {
+		if errors.IsNotFound(err) {
+			return nil
+		}
+		return err
+	}
+
+	return nil
 }
 
-func (*Store) GetNetwork(name string) (*types.Network, error) {
-	panic("implement me")
+func (s *Store) GetNetwork(name string) (*types.Network, error) {
+	networkCache := s.cache.GetNetwork(name)
+	if networkCache == nil {
+		return nil, fmt.Errorf("network %s is not in cache", name)
+	}
+
+	return networkCache, nil
 }
 
 func (*Store) GetLastReservedIP(name string) (*types.LastReservedIP, error) {

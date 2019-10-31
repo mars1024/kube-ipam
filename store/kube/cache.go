@@ -17,10 +17,11 @@
 package kube
 
 import (
+	"sync"
+
 	v1 "github.com/mars1024/kube-ipam/pkg/apis/resource/v1"
 	"github.com/mars1024/kube-ipam/types"
 	"github.com/sirupsen/logrus"
-	"sync"
 )
 
 var LoggerCache = logrus.WithFields(logrus.Fields{"component": "cache"})
