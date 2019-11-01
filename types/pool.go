@@ -18,10 +18,10 @@ package types
 
 import (
 	"fmt"
-	v1 "github.com/mars1024/kube-ipam/pkg/apis/resource/v1"
 	"net"
 
 	"github.com/containernetworking/plugins/pkg/ip"
+	resourcev1 "github.com/mars1024/kube-ipam/pkg/apis/resource/v1"
 )
 
 type Pool struct {
@@ -150,6 +150,18 @@ func (p *Pool) Overlaps(p1 *Pool) bool {
 		p1.Contains(p.PoolEnd)
 }
 
+// Sums returns the count of all available IPs in this pool
+func (p *Pool) Sum() int {
+	count := 0
+	for cur := p.PoolStart; !cur.Equal(p.PoolEnd); cur = ip.NextIP(cur) {
+		if !cur.Equal(p.Gateway) {
+			count++
+		}
+	}
+
+	return count + 1
+}
+
 // canonicalizeIP makes sure a provided ip is in ipv4 standard form
 func canonicalizeIP(ip *net.IP) error {
 	if ip.To4() == nil {
@@ -173,7 +185,7 @@ func lastIP(subnet *net.IPNet) net.IP {
 }
 
 // GetPoolFromCRD can help get typed pool from pool CRD
-func GetPoolFromCRD(p *v1.Pool) (*Pool, error) {
+func GetPoolFromCRD(p *resourcev1.Pool) (*Pool, error) {
 	pool := &Pool{
 		Name:   p.Name,
 		VlanID: p.VlanId,

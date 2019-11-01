@@ -262,3 +262,29 @@ func TestPool_Overlaps(t *testing.T) {
 		}
 	}
 }
+
+func TestPool_Sum(t *testing.T) {
+	tests := []struct {
+		name  string
+		pool  *Pool
+		count int
+	}{
+		{
+			"test",
+			&Pool{
+				PoolStart: net.ParseIP("192.168.0.10"),
+				PoolEnd:   net.ParseIP("192.168.0.20"),
+				Gateway:   net.ParseIP("192.168.0.15"),
+			},
+			10,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if test.pool.Sum() != test.count {
+				t.Errorf("test %s fails: expected %d but got %d", test.name, test.pool.Sum(), test.count)
+				return
+			}
+		})
+	}
+}
