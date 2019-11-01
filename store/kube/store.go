@@ -30,7 +30,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"k8s.io/apimachinery/pkg/api/errors"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
 )
@@ -41,7 +41,7 @@ var _ store.IPAMStore = &Store{}
 var LoggerStore = logrus.WithFields(logrus.Fields{"component": "store/kube"})
 
 type Store struct {
-	*sync.Mutex
+	*sync.RWMutex
 
 	resourceClient          versioned.Interface
 	resourceInformerFactory externalversions.SharedInformerFactory
@@ -73,7 +73,7 @@ func NewStore(masterURL, kubeConfig string, stopCh <-chan struct{}) (*Store, err
 	usingIPInformer := resourceInformerFactory.Resource().V1().UsingIPs()
 
 	store := &Store{
-		Mutex:                   new(sync.Mutex),
+		RWMutex:                 new(sync.RWMutex),
 		resourceClient:          resourceClient,
 		resourceInformerFactory: resourceInformerFactory,
 		resourceSynced: []cache.InformerSynced{
@@ -118,7 +118,7 @@ func (s *Store) CreateNetwork(name string) error {
 
 	// create empty network
 	network := &resourcev1.Network{
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
 	}
@@ -152,6 +152,9 @@ func (s *Store) DeleteNetwork(name string) error {
 }
 
 func (s *Store) GetNetwork(name string) (*types.Network, error) {
+	s.RLock()
+	defer s.RUnlock()
+
 	networkCache := s.cache.GetNetwork(name)
 	if networkCache == nil {
 		return nil, fmt.Errorf("network %s is not in cache", name)
@@ -160,16 +163,93 @@ func (s *Store) GetNetwork(name string) (*types.Network, error) {
 	return networkCache, nil
 }
 
-func (*Store) GetLastReservedIP(name string) (*types.LastReservedIP, error) {
-	panic("implement me")
+func (s *Store) GetLastReservedIP(name string) (*types.LastReservedIP, error) {
+	s.RLock()
+	defer s.RUnlock()
+
+	lriCache := s.cache.GetLastReservedIP(name)
+	if lriCache == nil {
+		return nil, fmt.Errorf("last reserved ip %s is not in cache", name)
+	}
+
+	return lriCache, nil
 }
 
-func (*Store) AddPool(network string, pool *types.Pool) error {
-	panic("implement me")
+func (s *Store) AddPool(name string, pool *types.Pool) error {
+	s.Lock()
+	defer s.Unlock()
+
+	// check existing and overlap for network
+	networkCache := s.cache.GetNetwork(name)
+	if networkCache == nil {
+		return fmt.Errorf("network %s is not in cache", name)
+	}
+	for _, p := range networkCache.Pools {
+		switch {
+		case pool.Name == p.Name:
+			return fmt.Errorf("network %s already has pool %s", name, pool.Name)
+		case pool.Overlaps(p):
+			return fmt.Errorf("new pool %+v overlaps old pool %+v in network %s", pool, p, name)
+		}
+	}
+
+	// check and canonicalize pool
+	if err := pool.Canonicalize(); err != nil {
+		return err
+	}
+
+	// append pool to network
+	network, err := s.resourceClient.ResourceV1().Networks().Get(name, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+	networkClone := network.DeepCopy()
+	networkClone.Spec.Pools = append(networkClone.Spec.Pools, resourcev1.Pool{
+		Name:      pool.Name,
+		PoolStart: pool.PoolStart.String(),
+		PoolEnd:   pool.PoolEnd.String(),
+		Gateway:   pool.Gateway.String(),
+		Subnet:    pool.Subnet.String(),
+		VlanId:    pool.VlanID,
+	})
+	if _, err = s.resourceClient.ResourceV1().Networks().Create(networkClone); err != nil {
+		return err
+	}
+
+	return nil
 }
 
-func (*Store) DelPool(network, pool string) error {
-	panic("implement me")
+func (s *Store) DelPool(networkName, poolName string) error {
+	s.Lock()
+	defer s.Unlock()
+
+	// get network from kubernetes
+	network, err := s.resourceClient.ResourceV1().Networks().Get(networkName, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+
+	networkClone := network.DeepCopy()
+
+	// get pool index, judge if pool is empty
+	poolIndex := -1
+	for index, pool := range networkClone.Spec.Pools {
+		if pool.Name == poolName {
+			poolIndex = index
+			//TODO: check pool count
+		}
+	}
+	if poolIndex < 0 {
+		return fmt.Errorf("network %s does not have pool %s", networkName, poolName)
+	}
+
+	// remove pool from network
+	networkClone.Spec.Pools = append(networkClone.Spec.Pools[:poolIndex], networkClone.Spec.Pools[poolIndex+1:]...)
+	if _, err = s.resourceClient.ResourceV1().Networks().Update(networkClone); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (*Store) CountPool(network, pool string) (total, used int, err error) {
