@@ -25,6 +25,7 @@ import (
 	resourcev1 "github.com/mars1024/kube-ipam/pkg/apis/resource/v1"
 	"github.com/mars1024/kube-ipam/pkg/client/clientset/versioned"
 	"github.com/mars1024/kube-ipam/pkg/client/informers/externalversions"
+	"github.com/mars1024/kube-ipam/pkg/utils"
 	"github.com/mars1024/kube-ipam/store"
 	"github.com/mars1024/kube-ipam/types"
 	"github.com/sirupsen/logrus"
@@ -395,4 +396,72 @@ func (s *Store) deleteUsingIPFromCache(obj interface{}) {
 	}
 
 	s.cache.deleteUsingIP(usingIP)
+}
+
+func (s *Store) createUsingIP(network, pool, namespace, name, ip string) (bool, error) {
+	usingIP := &resourcev1.UsingIP{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: utils.ToKubeName(ip),
+		},
+		Spec: resourcev1.UsingIPSpec{
+			PodName:      name,
+			PodNamespace: namespace,
+			Network:      network,
+			Pool:         pool,
+		},
+	}
+
+	_, err := s.resourceClient.ResourceV1().UsingIPs().Create(usingIP)
+	if err != nil && errors.IsAlreadyExists(err) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
+
+func (s *Store) deleteUsingIP(ip string) error {
+	return s.resourceClient.ResourceV1().UsingIPs().Delete(utils.ToKubeName(ip), nil)
+}
+
+func (s *Store) createLastReservedIP(networkName, poolName, ip string) error {
+	lri := &resourcev1.LastReservedIP{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: networkName,
+		},
+		Spec: resourcev1.LastReservedIPSpec{
+			IP:       ip,
+			PoolName: poolName,
+		},
+	}
+
+	if _, err := s.resourceClient.ResourceV1().LastReservedIPs().Create(lri); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *Store) updateLastReservedIP(networkName, poolName, ip string) error {
+	odlLri, err := s.resourceClient.ResourceV1().LastReservedIPs().Get(networkName, metav1.GetOptions{})
+	if err != nil {
+		if errors.IsNotFound(err) {
+			return s.createLastReservedIP(networkName, poolName, ip)
+		}
+		return err
+	}
+
+	newLri := odlLri.DeepCopy()
+	newLri.Spec.IP = ip
+	newLri.Spec.PoolName = poolName
+
+	if _, err := s.resourceClient.ResourceV1().LastReservedIPs().Update(newLri); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *Store) deleteLastReservedIP(networkName string) error {
+	return s.resourceClient.ResourceV1().LastReservedIPs().Delete(networkName, nil)
 }
