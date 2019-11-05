@@ -37,6 +37,6 @@ type IPAMStore interface {
 
 	// IP
 	Reserve(network, pool, namespace, name string, ip net.IP) (bool, error)
-	Release(network, pool string, ip net.IP) error
+	Release(ip net.IP) error
 	ReleaseByName(network, pool, namespace, name string) error
 }

@@ -257,12 +257,28 @@ func (*Store) CountPool(network, pool string) (total, used int, err error) {
 	panic("implement me")
 }
 
-func (*Store) Reserve(network, pool, namespace, name string, ip net.IP) (bool, error) {
-	panic("implement me")
+func (s *Store) Reserve(network, pool, namespace, name string, ip net.IP) (bool, error) {
+	s.Lock()
+	defer s.Unlock()
+
+	if s.cache.IsIPUsing(utils.ToKubeName(ip.String())) {
+		return false, nil
+	}
+
+	reserved, err := s.createUsingIP(network, pool, namespace, name, ip.String())
+	if reserved {
+		// fail safe
+		_ = s.updateLastReservedIP(network, pool, ip.String())
+	}
+
+	return reserved, err
 }
 
-func (*Store) Release(network, pool string, ip net.IP) error {
-	panic("implement me")
+func (s *Store) Release(ip net.IP) error {
+	s.Lock()
+	defer s.Unlock()
+
+	return s.deleteUsingIP(ip.String())
 }
 
 func (*Store) ReleaseByName(network, pool, namespace, name string) error {
