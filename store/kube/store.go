@@ -109,6 +109,23 @@ func NewStore(masterURL, kubeConfig string, stopCh <-chan struct{}) (*Store, err
 	return s, nil
 }
 
+func (s *Store) Run() error {
+	LoggerStore.Debug("starting resource informer factory")
+	go s.resourceInformerFactory.Start(s.stopEverything)
+
+	LoggerStore.Info("waiting for caches to sync")
+	if ok := cache.WaitForCacheSync(s.stopEverything, s.resourceSynced...); !ok {
+		return fmt.Errorf("fail to sync caches")
+	}
+
+	// non-blocking
+	go func() {
+		<-s.stopEverything
+		LoggerStore.Info("kube store shutting down...")
+	}()
+	return nil
+}
+
 func (s *Store) CreateNetwork(name string) error {
 	s.Lock()
 	defer s.Unlock()
