@@ -73,7 +73,7 @@ func NewStore(masterURL, kubeConfig string, stopCh <-chan struct{}) (*Store, err
 	lastReservedIPInformer := resourceInformerFactory.Resource().V1().LastReservedIPs()
 	usingIPInformer := resourceInformerFactory.Resource().V1().UsingIPs()
 
-	store := &Store{
+	s := &Store{
 		RWMutex:                 new(sync.RWMutex),
 		resourceClient:          resourceClient,
 		resourceInformerFactory: resourceInformerFactory,
@@ -89,24 +89,24 @@ func NewStore(masterURL, kubeConfig string, stopCh <-chan struct{}) (*Store, err
 	// add handlers
 	LoggerStore.Info("Setting up event handlers")
 	networkInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc:    store.addNetworkToCache,
-		UpdateFunc: store.updateNetworkInCache,
-		DeleteFunc: store.deleteNetworkFromCache,
+		AddFunc:    s.addNetworkToCache,
+		UpdateFunc: s.updateNetworkInCache,
+		DeleteFunc: s.deleteNetworkFromCache,
 	})
 
 	lastReservedIPInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc:    store.addLastReservedIPToCache,
-		UpdateFunc: store.updateLastReservedIPInCache,
-		DeleteFunc: store.deleteLastReservedIPFromCache,
+		AddFunc:    s.addLastReservedIPToCache,
+		UpdateFunc: s.updateLastReservedIPInCache,
+		DeleteFunc: s.deleteLastReservedIPFromCache,
 	})
 
 	usingIPInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc:    store.addUsingIPToCache,
-		UpdateFunc: store.updateUsingIPInCache,
-		DeleteFunc: store.deleteUsingIPFromCache,
+		AddFunc:    s.addUsingIPToCache,
+		UpdateFunc: s.updateUsingIPInCache,
+		DeleteFunc: s.deleteUsingIPFromCache,
 	})
 
-	return store, nil
+	return s, nil
 }
 
 func (s *Store) CreateNetwork(name string) error {
